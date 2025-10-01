@@ -29,9 +29,16 @@ def register_user(user: User):
     cursor.execute("SET FOREIGN_KEY_CHECKS=0")
 
     try:
+        roles_str = ",".join(user.roles)
+
+        cursor.execute("SELECT role_id FROM role where role_name=%s", (roles_str,))
+        role = cursor.fetchone()
+
+        role_id = role[0]
+
         cursor.execute(
-            "INSERT INTO user (username, email, password_hash, roles) VALUES (%s, %s, %s, %s)",
-            (user.username, user.email, user.password, ",".join(user.roles))
+            "INSERT INTO user (username, email, password_hash, roles, role_id) VALUES (%s, %s, %s, %s, %s)",
+            (user.username, user.email, user.password, roles_str, role_id)
         )
         conn.commit()
         cursor.execute("SET FOREIGN_KEY_CHECKS=1")
