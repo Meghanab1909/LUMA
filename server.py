@@ -42,6 +42,7 @@ def register_user(user: User):
             "INSERT INTO user (username, email, password_hash, roles, role_id) VALUES (%s, %s, %s, %s, %s)",
             (user.username, user.email, user.password, roles_str, role_id)
         )
+
         conn.commit()
         cursor.execute("SET FOREIGN_KEY_CHECKS=1")
         return {"message": "User registered successfully"}
@@ -107,7 +108,12 @@ def raise_ticket(ticket: Ticket):
         logging.info(f"Ticket data: {(ticket.title, ticket.description, ticket.status, ticket.priority, user_id, None, ticket.created_at, ticket.updated_at, specialization_str)}")
 
         cursor.execute("INSERT INTO BUGTICKET (TITLE, DESCRIPTION, STATUS, PRIORITY, CREATED_BY, ASSIGNED_TO, CREATED_AT, UPDATED_AT, SPECIALISATION) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)",
-                    (ticket.title, ticket.description, ticket.status, ticket.priority, user_id, None, ticket.created_at, ticket.created_at, specialization_str))
+                    (ticket.title, ticket.description, ticket.status, ticket.priority, user_id, None, ticket.created_at, None, specialization_str))
+        
+        
+        bugticket_id = cursor.lastrowid
+
+        cursor.execute("INSERT INTO AUDITLOG (bugtkt_id, user_id, action) VALUES (%s, %s, %s)", (bugticket_id, user_id, f"Ticket raised by USER {user_id}"))
         
         conn.commit()
         cursor.execute("SET FOREIGN_KEY_CHECKS=1")
@@ -155,6 +161,10 @@ def accept(ticket: AcceptTicket):
         user_id = user[0]
 
         cursor.execute("update bugticket set assigned_to = %s where bugtkt_id = %s", (user_id, ticket.ticket_id))
+
+        cursor.execute("INSERT INTO AUDITLOG (bugtkt_id, user_id, action) VALUES (%s, %s, %s)",
+                       (ticket.ticket_id, user_id, f"Ticket {ticket.ticket_id} accepted by USER {user_id}"))
+        
         conn.commit()
 
         cursor.execute("SET FOREIGN_KEY_CHECKS = 1")
