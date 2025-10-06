@@ -213,6 +213,7 @@ def accept_ticket(ticket_id, username):
 
         if "message" in data:
             st.success(f"✅ Ticket {ticket_id} is accepted by {username}")
+            st.info("📋 Tip: Once you accept a ticket, it won’t appear here anymore. Refresh to see updated tickets.")
         else:
             st.info(f"ℹ️ {data}")
 
