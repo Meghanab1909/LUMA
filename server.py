@@ -160,7 +160,7 @@ def accept(ticket: AcceptTicket):
         
         user_id = user[0]
 
-        cursor.execute("update bugticket set assigned_to = %s where bugtkt_id = %s", (user_id, ticket.ticket_id))
+        cursor.execute("update bugticket set assigned_to = %s and status = %s where bugtkt_id = %s", (user_id, "IN PROGRESS", ticket.ticket_id))
 
         cursor.execute("INSERT INTO AUDITLOG (bugtkt_id, user_id, action) VALUES (%s, %s, %s)",
                        (ticket.ticket_id, user_id, f"Ticket {ticket.ticket_id} accepted by USER {user_id}"))
@@ -170,6 +170,37 @@ def accept(ticket: AcceptTicket):
         cursor.execute("SET FOREIGN_KEY_CHECKS = 1")
 
         return {"message": "Ticket accepted successfully"}
+    except Exception as e:
+        raise HTTPException(status = 500, detail = str(e))
+    finally:
+        cursor.close()
+        conn.close()
+
+@app.get("/accept-tickets")
+def display_usertickets(username: str):
+    conn = get_db()
+    cursor = conn.cursor(dictionary=True)
+
+    try:
+        cursor.execute("SET FOREIGN_KEY_CHECKS = 0")
+        
+        cursor.execute("select user_id from user where username = %s", (username,))
+        user = cursor.fetchone()
+
+        if user is None:
+            raise HTTPException(status_code=404, detail=f"User '{username}' not found in the database.")
+        
+        user_id = user["user_id"]
+
+        cursor.execute("select *from bugticket where created_by = %s", (user_id,))
+        created_tickets = cursor.fetchall()
+
+        cursor.execute("select *from bugticket where assigned_to = %s", (user_id,))
+        assigned_tickets = cursor.fetchall()
+
+        cursor.execute("SET FOREIGN_KEY_CHECKS = 1")
+
+        return {"created_tickets": created_tickets, "assigned_tickets": assigned_tickets}
     except Exception as e:
         raise HTTPException(status = 500, detail = str(e))
     finally:

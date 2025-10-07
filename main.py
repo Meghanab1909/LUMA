@@ -23,6 +23,12 @@ if "page" not in st.session_state:
 if "ticket_page" not in st.session_state:
     st.session_state.ticket_page = False 
 
+if "your_tickets" not in st.session_state:
+    st.session_state.your_tickets = False
+
+if "home" not in st.session_state:
+    st.session_state.home = False 
+
 def get_base64(file_path):
     with open(file_path, "rb") as f:
         return base64.b64encode(f.read()).decode()
@@ -220,6 +226,89 @@ def accept_ticket(ticket_id, username):
     except Exception as e:
         st.error(f"❌ Failed to accept ticket: {e}")
 
+def show_user_tickets():
+    try:
+        username = st.session_state["login_username"]
+        response = requests.get(f"http://127.0.0.1:8000/accept-tickets?username={username}")
+        response.raise_for_status()
+        data = response.json()
+
+        created_tickets = data.get("created_tickets", [])
+        assigned_tickets = data.get("assigned_tickets", [])
+
+        st.markdown("### 📝 Tickets You Created")
+
+        if created_tickets:
+            for ticket in created_tickets:
+                with st.container():
+                    st.markdown(
+                        f"""
+                        <div style="padding:15px; margin-bottom:15px; border-radius:10px; 
+                        background-color:#f9f9f9; box-shadow:0px 2px 5px rgba(0,0,0,0.1)">
+                            <h4>🎫 {ticket['TITLE']}</h4>
+                            <p><b>Status:</b> {ticket['status']} | <b>Priority:</b> {ticket['priority']}</p>
+                            <p><b>Assigned To:</b> {ticket['assigned_to']}</p>
+                            <p><b>Specialization:</b> {ticket['specialisation']}</p>
+                            <details>
+                                <summary><b>Description</b></summary>
+                                <p>{ticket['description']}</p>
+                            </details>
+                            <p style="font-size:12px; color:gray;">Created at: {ticket['created_at']}</p>
+                        </div>
+                        """,
+                        unsafe_allow_html=True
+                    )
+
+                    col1, col2 = st.columns([1,1])  # adjust ratios
+                    with col2:
+                        close_btn = st.button("⛔ Close Ticket", key=f"close_{ticket['bugtkt_id']}")
+                        '''
+                        if close_btn:
+                            #username = st.session_state["login_username"]
+                            #accept_ticket(ticket['bugtkt_id'], username)
+                            close_ticket(ticket['bugtkt_id']) #implement this
+                        '''
+        else:
+            st.warning("No created tickets")
+
+        st.markdown("### 🎯 Tickets Assigned to You")
+
+        if assigned_tickets:
+            for ticket in assigned_tickets:
+                with st.container():
+                    st.markdown(
+                        f"""
+                        <div style="padding:15px; margin-bottom:15px; border-radius:10px; 
+                        background-color:#f9f9f9; box-shadow:0px 2px 5px rgba(0,0,0,0.1)">
+                            <h4>🎫 {ticket['TITLE']}</h4>
+                            <p><b>Status:</b> {ticket['status']} | <b>Priority:</b> {ticket['priority']}</p>
+                            <p><b>Created By:</b> {ticket['created_by']}</p>
+                            <p><b>Specialization:</b> {ticket['specialisation']}</p>
+                            <details>
+                                <summary><b>Description</b></summary>
+                                <p>{ticket['description']}</p>
+                            </details>
+                            <p style="font-size:12px; color:gray;">Created at: {ticket['created_at']}</p>
+                        </div>
+                        """,
+                        unsafe_allow_html=True
+                    )
+
+                    col1, col2 = st.columns([1,1])  # adjust ratios
+                    with col2:
+                        close_btn = st.button("⛔ Close Ticket", key=f"close_{ticket['bugtkt_id']}")
+                        '''
+                        if close_btn:
+                            #username = st.session_state["login_username"]
+                            #accept_ticket(ticket['bugtkt_id'], username)
+                            close_ticket(ticket['bugtkt_id']) #implement this
+                        '''
+
+        else:
+            st.warning("No assigned tickets")
+    except Exception as e:
+        st.error(f"❌ Failed to fetch tickets: {e}")
+
 def show_tickets():
     try:
         response = requests.get("http://127.0.0.1:8000/tickets")
@@ -302,11 +391,20 @@ def show_mainpage():
     username = st.session_state["login_username"]
     st.sidebar.markdown(f"<h1 style = 'margin-left: 40px'>👤 User: {username}</h1><br>", unsafe_allow_html = True)
 
+    if st.sidebar.button("🏠 Home", key = "home-page"):
+        st.session_state.home = True
+        st.session_state.ticket_page = False
+        st.session_state.your_tickets = False 
+
     if st.sidebar.button("📝 Raise a Ticket", key = "raise-ticket"):
         st.session_state.ticket_page = True
+        st.session_state.your_tickets = False 
+        st.session_state.home = False
 
-    if st.sidebar.button("📩 Comments", key = "show-ticket"):
+    if st.sidebar.button("📩 Your Tickets", key = "show-ticket"):
+        st.session_state.your_tickets = True
         st.session_state.ticket_page = False 
+        st.session_state.home = False
 
     if st.sidebar.button("⭕ Logout", key = "logout"):
         st.session_state.logged_in = False
@@ -315,6 +413,12 @@ def show_mainpage():
     
     if st.session_state.ticket_page:
         raise_ticket()
+
+    if st.session_state.your_tickets:
+        show_user_tickets()
+    
+    if st.session_state.home:
+        show_tickets()
     else:
         show_tickets()
 
