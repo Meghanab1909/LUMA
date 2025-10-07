@@ -192,15 +192,51 @@ def display_usertickets(username: str):
         
         user_id = user["user_id"]
 
-        cursor.execute("select *from bugticket where created_by = %s", (user_id,))
+        cursor.execute("select *from bugticket where created_by = %s and STATUS <> %s", (user_id, "CLOSED",))
         created_tickets = cursor.fetchall()
 
-        cursor.execute("select *from bugticket where assigned_to = %s", (user_id,))
+        cursor.execute("select *from bugticket where assigned_to = %s and STATUS <> %s", (user_id, "CLOSED"))
         assigned_tickets = cursor.fetchall()
 
         cursor.execute("SET FOREIGN_KEY_CHECKS = 1")
 
         return {"created_tickets": created_tickets, "assigned_tickets": assigned_tickets}
+    except Exception as e:
+        raise HTTPException(status = 500, detail = str(e))
+    finally:
+        cursor.close()
+        conn.close()
+
+class CloseTicket(BaseModel):
+    ticket_id: int
+    username: str
+
+@app.post("/close-tickets")
+def close_tickets(ticket: CloseTicket):
+    conn = get_db()
+    cursor = conn.cursor()
+
+    try:
+        cursor.execute("SET FOREIGN_KEY_CHECKS = 0")
+
+        cursor.execute("select user_id from user where username = %s", (ticket.username,))
+        user = cursor.fetchone()
+
+        if user is None:
+            raise HTTPException(status_code=404, detail=f"User '{ticket.username}' not found in the database.")
+        
+        user_id = user[0]
+
+        cursor.execute("UPDATE bugticket set STATUS = %s where bugtkt_id = %s", ("CLOSED", ticket.ticket_id))
+
+        cursor.execute("INSERT INTO AUDITLOG (bugtkt_id, user_id, action) VALUES (%s, %s, %s)",
+                       (ticket.ticket_id, user_id, f"Ticket {ticket.ticket_id} closed by USER {user_id}"))
+
+        conn.commit()
+
+        cursor.execute("SET FOREIGN_KEY_CHECKS = 1")
+
+        return {"message": "Ticket closed successfully"}
     except Exception as e:
         raise HTTPException(status = 500, detail = str(e))
     finally:

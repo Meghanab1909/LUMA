@@ -226,6 +226,26 @@ def accept_ticket(ticket_id, username):
     except Exception as e:
         st.error(f"❌ Failed to accept ticket: {e}")
 
+def close_ticket(ticket_id, username):
+    try:
+        payload = {
+            "ticket_id": ticket_id,
+            "username": username
+        }
+
+        response = requests.post(f"http://127.0.0.1:8000/close-tickets", json = payload)
+        response.raise_for_status()
+
+        data = response.json()
+
+        if "message" in data:
+            st.success(f"✅ Ticket {ticket_id} is closed")
+        else:
+            st.info(f"ℹ️ {data}")
+
+    except Exception as e:
+        st.error(f"❌ Failed to close ticket: {e}")
+
 def show_user_tickets():
     try:
         username = st.session_state["login_username"]
@@ -261,13 +281,9 @@ def show_user_tickets():
 
                     col1, col2 = st.columns([1,1])  # adjust ratios
                     with col2:
-                        close_btn = st.button("⛔ Close Ticket", key=f"close_{ticket['bugtkt_id']}")
-                        '''
+                        close_btn = st.button("⛔ Close Ticket", key=f"close_created_{ticket['bugtkt_id']}")
                         if close_btn:
-                            #username = st.session_state["login_username"]
-                            #accept_ticket(ticket['bugtkt_id'], username)
-                            close_ticket(ticket['bugtkt_id']) #implement this
-                        '''
+                            close_ticket(ticket['bugtkt_id'], username)
         else:
             st.warning("No created tickets")
 
@@ -296,13 +312,9 @@ def show_user_tickets():
 
                     col1, col2 = st.columns([1,1])  # adjust ratios
                     with col2:
-                        close_btn = st.button("⛔ Close Ticket", key=f"close_{ticket['bugtkt_id']}")
-                        '''
+                        close_btn = st.button("⛔ Close Ticket", key=f"close_accepted{ticket['bugtkt_id']}")
                         if close_btn:
-                            #username = st.session_state["login_username"]
-                            #accept_ticket(ticket['bugtkt_id'], username)
-                            close_ticket(ticket['bugtkt_id']) #implement this
-                        '''
+                            close_ticket(ticket['bugtkt_id'], username)
 
         else:
             st.warning("No assigned tickets")
@@ -338,7 +350,7 @@ def show_tickets():
 
                     col1, col2 = st.columns([1,1])  # adjust ratios
                     with col2:
-                        accept_btn = st.button("✅ Accept Ticket", key=f"accept_{ticket['bugtkt_id']}")
+                        accept_btn = st.button("✅ Accept Ticket", key=f"accept_ticket_{ticket['bugtkt_id']}_alltickets")
                         
                         if accept_btn:
                             username = st.session_state["login_username"]
