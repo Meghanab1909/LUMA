@@ -77,7 +77,7 @@ def show_login():
                     "password": login_password}
             
             try:
-                response = requests.post("http://127.0.0.1:8000/login", json = payload)
+                response = requests.post("http://MSB:8000/login", json = payload)
                 response.raise_for_status()
 
                 try:
@@ -123,7 +123,7 @@ def show_register():
                     "roles": list(roles)}
         
             try:
-                response = requests.post("http://127.0.0.1:8000/register", json = payload)
+                response = requests.post("http://MSB:8000/register", json = payload)
                 response.raise_for_status()
 
                 try:
@@ -193,7 +193,7 @@ def raise_ticket():
                 }
 
                 try:
-                    response = requests.post("http://127.0.0.1:8000/tickets", json=payload)
+                    response = requests.post("http://MSB:8000/tickets", json=payload)
                     response.raise_for_status()
 
                     data = response.json()
@@ -215,7 +215,7 @@ def accept_ticket(ticket_id, username):
                 "username": username}
     
     try:
-        response = requests.post("http://127.0.0.1:8000/accept-tickets", json = payload)
+        response = requests.post("http://MSB:8000/accept-tickets", json = payload)
         response.raise_for_status()
 
         data = response.json()
@@ -236,7 +236,7 @@ def close_ticket(ticket_id, username):
             "username": username
         }
 
-        response = requests.post(f"http://127.0.0.1:8000/close-tickets", json = payload)
+        response = requests.post(f"http://MSB:8000/close-tickets", json = payload)
         response.raise_for_status()
 
         data = response.json()
@@ -252,7 +252,7 @@ def close_ticket(ticket_id, username):
 def show_user_tickets():
     try:
         username = st.session_state["login_username"]
-        response = requests.get(f"http://127.0.0.1:8000/accept-tickets?username={username}")
+        response = requests.get(f"http://MSB:8000/accept-tickets?username={username}")
         response.raise_for_status()
         data = response.json()
 
@@ -328,7 +328,7 @@ def show_user_tickets():
 
 def show_tickets():
     try:
-        response = requests.get("http://127.0.0.1:8000/tickets")
+        response = requests.get("http://MSB:8000/tickets")
         response.raise_for_status()
         data = response.json()
 
@@ -402,7 +402,7 @@ def write_comments():
             if not bugtkt_id:
                 st.warning("Enter bug ticket to view the comments")
             else:
-                response = requests.get(f"http://127.0.0.1:8000/comments?bugtkt_id={bugtkt_id}")
+                response = requests.get(f"http://MSB:8000/comments?bugtkt_id={bugtkt_id}")
                 response.raise_for_status()
 
                 data = response.json()
@@ -485,7 +485,7 @@ def write_comments():
                 }
 
                 try:
-                    response = requests.post("http://127.0.0.1:8000/comments", json=payload)
+                    response = requests.post("http://MSB:8000/comments", json=payload)
                     response.raise_for_status()
 
                     data = response.json()
