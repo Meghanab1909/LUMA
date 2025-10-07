@@ -29,6 +29,9 @@ if "your_tickets" not in st.session_state:
 if "home" not in st.session_state:
     st.session_state.home = False 
 
+if "comments" not in st.session_state:
+    st.session_state.comments = False
+
 def get_base64(file_path):
     with open(file_path, "rb") as f:
         return base64.b64encode(f.read()).decode()
@@ -266,6 +269,7 @@ def show_user_tickets():
                         <div style="padding:15px; margin-bottom:15px; border-radius:10px; 
                         background-color:#f9f9f9; box-shadow:0px 2px 5px rgba(0,0,0,0.1)">
                             <h4>🎫 {ticket['TITLE']}</h4>
+                            <h5>Ticket ID: {ticket['bugtkt_id']}</h5>
                             <p><b>Status:</b> {ticket['status']} | <b>Priority:</b> {ticket['priority']}</p>
                             <p><b>Assigned To:</b> {ticket['assigned_to']}</p>
                             <p><b>Specialization:</b> {ticket['specialisation']}</p>
@@ -287,7 +291,7 @@ def show_user_tickets():
         else:
             st.warning("No created tickets")
 
-        st.markdown("### 🎯 Tickets Assigned to You")
+        st.markdown("<hr><h3>🎯 Tickets Assigned to You</h3>", unsafe_allow_html = True)
 
         if assigned_tickets:
             for ticket in assigned_tickets:
@@ -297,6 +301,7 @@ def show_user_tickets():
                         <div style="padding:15px; margin-bottom:15px; border-radius:10px; 
                         background-color:#f9f9f9; box-shadow:0px 2px 5px rgba(0,0,0,0.1)">
                             <h4>🎫 {ticket['TITLE']}</h4>
+                            <h5>Ticket ID: {ticket['bugtkt_id']}</h5>
                             <p><b>Status:</b> {ticket['status']} | <b>Priority:</b> {ticket['priority']}</p>
                             <p><b>Created By:</b> {ticket['created_by']}</p>
                             <p><b>Specialization:</b> {ticket['specialisation']}</p>
@@ -335,6 +340,7 @@ def show_tickets():
                         <div style="padding:15px; margin-bottom:15px; border-radius:10px; 
                         background-color:#f9f9f9; box-shadow:0px 2px 5px rgba(0,0,0,0.1)">
                             <h4>🎫 {ticket['TITLE']}</h4>
+                            <h5>Ticket ID: {ticket['bugtkt_id']}</h5>
                             <p><b>Status:</b> {ticket['status']} | <b>Priority:</b> {ticket['priority']}</p>
                             <p><b>Created By:</b> {ticket['created_by']}</p>
                             <p><b>Specialization:</b> {ticket['specialisation']}</p>
@@ -350,7 +356,7 @@ def show_tickets():
 
                     col1, col2 = st.columns([1,1])  # adjust ratios
                     with col2:
-                        accept_btn = st.button("✅ Accept Ticket", key=f"accept_ticket_{ticket['bugtkt_id']}_alltickets")
+                        accept_btn = st.button("✅ Accept Ticket", key=f"accept{ticket['bugtkt_id']}")
                         
                         if accept_btn:
                             username = st.session_state["login_username"]
@@ -376,6 +382,125 @@ def show_tickets():
         )
     except Exception as e:
         st.error(f"❌ Failed to fetch tickets: {e}")
+
+def write_comments():
+    st.markdown("""
+    <style>
+    .main {
+        top: 0;
+        position: absolute;
+    }
+    </style>
+    <h2>ENTER A BUG TICKET ID TO VIEW COMMENTS</h2>
+    """, unsafe_allow_html=True)
+
+    with st.form("view_comment_form", clear_on_submit = False):
+        bugtkt_id = st.text_input("Bug Ticket ID")
+        view = st.form_submit_button("View")
+
+        if view:
+            if not bugtkt_id:
+                st.warning("Enter bug ticket to view the comments")
+            else:
+                response = requests.get(f"http://127.0.0.1:8000/comments?bugtkt_id={bugtkt_id}")
+                response.raise_for_status()
+
+                data = response.json()
+                
+                comments = data.get("comments", [])
+
+                if comments:
+                    for c in comments:
+                        st.markdown(f"""
+                        <style>
+                            .comment-section {{
+                                width: 90%;
+                                margin: 20px auto;
+                                font-family: 'Segoe UI', sans-serif;
+                            }}
+                            table {{
+                                width: 100%;
+                                border-collapse: collapse;
+                                background: #fff;
+                                box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+                                border-radius: 10px;
+                                overflow: hidden;
+                            }}
+                            th {{
+                                background-color: #4DB6AC;
+                                color: white;
+                                text-align: left;
+                                padding: 10px;
+                                font-size: 15px;
+                            }}
+                            td {{
+                                padding: 10px;
+                                border-bottom: 1px solid #eee;
+                                font-size: 14px;
+                            }}
+                            tr:last-child td {{
+                                border-bottom: none;
+                            }}
+                            tr:hover td {{
+                                background-color: #f9f9f9;
+                            }}
+                            .no-comments {{
+                                text-align: center;
+                                color: gray;
+                                padding: 20px;
+                            }}
+                        </style>
+
+                        <div class="comment-section">
+                            {"<table><tr><th>User ID</th><th>Comment</th><th>Created At</th></tr>" +
+                            "".join([f"<tr><td>{c['user_id']}</td><td>{c['comment_text']}</td><td>{c['created_at']}</td></tr>" for c in comments])
+                            + "</table>"}
+                        </div>
+                    """, unsafe_allow_html=True)
+                else:
+                    st.info("No comments yet for this ticket 💭")
+
+                st.markdown("</div>", unsafe_allow_html=True)
+                    
+    st.markdown("""
+    <h2>WRITE YOUR COMMENT FOR A TICKET</h2>
+    """, unsafe_allow_html = True)
+
+    st.markdown("<div class = 'main'>", unsafe_allow_html = True)
+    with st.form("comment_form", clear_on_submit = True):
+        bugtkt_id = st.text_input("Bug Ticket ID")
+        username = st.session_state["login_username"]
+        comment_text = st.text_area("Enter comment")
+
+        submit = st.form_submit_button("Submit")
+
+        if submit:
+            if not bugtkt_id or not comment_text:
+                st.warning("Please fill all required fields")
+            else:
+                payload = {
+                    "bugtkt_id": bugtkt_id,
+                    "username": username,
+                    "comment_text": comment_text
+                }
+
+                try:
+                    response = requests.post("http://127.0.0.1:8000/comments", json=payload)
+                    response.raise_for_status()
+
+                    data = response.json()
+                    
+                    if "message" in data:
+                        st.success(f"✅ {data['message']}")
+                    else:
+                        st.info(f"ℹ️ {data}")
+                
+                except requests.exceptions.HTTPError as e:
+                    st.error(f"HTTP Error: {e.response.status_code} - {e.response.text}")
+                except Exception as e:
+                    st.error(f"Request failed: {e}")
+    
+    st.markdown('</div>', unsafe_allow_html=True)
 
 def show_mainpage():
     st.markdown(
@@ -407,14 +532,23 @@ def show_mainpage():
         st.session_state.home = True
         st.session_state.ticket_page = False
         st.session_state.your_tickets = False 
+        st.session_state.comments = False
 
     if st.sidebar.button("📝 Raise a Ticket", key = "raise-ticket"):
         st.session_state.ticket_page = True
         st.session_state.your_tickets = False 
         st.session_state.home = False
+        st.session_state.comments = False
 
     if st.sidebar.button("📩 Your Tickets", key = "show-ticket"):
         st.session_state.your_tickets = True
+        st.session_state.ticket_page = False 
+        st.session_state.home = False
+        st.session_state.comments = False
+
+    if st.sidebar.button("✒️ Comments", key = "write-comments"):
+        st.session_state.comments = True 
+        st.session_state.your_tickets = False
         st.session_state.ticket_page = False 
         st.session_state.home = False
 
@@ -425,12 +559,12 @@ def show_mainpage():
     
     if st.session_state.ticket_page:
         raise_ticket()
-
-    if st.session_state.your_tickets:
+    elif st.session_state.your_tickets:
         show_user_tickets()
-    
-    if st.session_state.home:
+    elif st.session_state.home:
         show_tickets()
+    elif st.session_state.comments:
+        write_comments()
     else:
         show_tickets()
 

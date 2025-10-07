@@ -207,6 +207,67 @@ def display_usertickets(username: str):
         cursor.close()
         conn.close()
 
+class Comments(BaseModel):
+    bugtkt_id: int
+    username: str 
+    comment_text: str 
+
+@app.post("/comments")
+def write_comment(comment: Comments):
+    conn = get_db()
+    cursor = conn.cursor()
+
+    try:
+        cursor.execute("SET FOREIGN_KEY_CHECKS = 0")
+
+        cursor.execute("select user_id from user where username = %s", (comment.username,))
+        user = cursor.fetchone()
+
+        if user is None:
+            raise HTTPException(status_code=404, detail=f"User '{comment.username}' not found in the database.")
+        
+        user_id = user[0]
+
+        cursor.execute("select created_by, assigned_to from bugticket where bugtkt_id = %s", (comment.bugtkt_id,))
+
+        user2 = cursor.fetchone()
+
+
+        if(user_id not in (user2[0], user2[1])):
+            raise HTTPException(status_code=404, detail=f"This user has neither created or been assigned to hence cannot comment")
+
+        cursor.execute("INSERT INTO COMMENT (bug_id, user_id, comment_text) VALUES (%s, %s, %s)",
+                       (comment.bugtkt_id, user_id, comment.comment_text))
+
+        cursor.execute("INSERT INTO AUDITLOG (bugtkt_id, user_id, action) VALUES (%s, %s, %s)",
+                       (comment.bugtkt_id, user_id, f"A comment was added for TICKET {comment.bugtkt_id} by USER {user_id}"))
+
+        conn.commit()
+
+        cursor.execute("SET FOREIGN_KEY_CHECKS = 1")
+
+        return {"message": "Comment added successfully"}
+    except Exception as e:
+        raise HTTPException(status_code = 500, detail = str(e))
+    finally:
+        cursor.close()
+        conn.close()
+
+@app.get("/comments")
+def show_comments(bugtkt_id: int):
+    conn = get_db()
+    cursor = conn.cursor(dictionary = True)
+
+    try:
+        cursor.execute("select *from comment where bug_id = %s", (bugtkt_id,))
+        comments = cursor.fetchall()
+        return {"comments": comments}
+    except Exception as e:
+        raise HTTPException(status = 500, detail = str(e))
+    finally:
+        cursor.close()
+        conn.close()
+
 class CloseTicket(BaseModel):
     ticket_id: int
     username: str
