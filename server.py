@@ -4,6 +4,7 @@ from pydantic import BaseModel
 import mysql.connector
 import logging
 from typing import Optional
+from datetime import datetime
 
 app = FastAPI()
 
@@ -31,7 +32,7 @@ def register_user(user: User):
     cursor.execute("SET FOREIGN_KEY_CHECKS=0")
 
     try:
-        roles_str = ",".join(user.roles)
+        roles_str = ",".join(sorted(user.roles)) if isinstance(user.roles, list) else user.roles
 
         cursor.execute("SELECT role_id FROM role where role_name=%s", (roles_str,))
         role = cursor.fetchone()
@@ -131,7 +132,7 @@ def show_tickets():
     cursor = conn.cursor(dictionary = True)
 
     try:
-        cursor.execute("select *from bugticket where assigned_to IS NULL")
+        cursor.execute("select *from bugticket where assigned_to IS NULL or assigned_to = 0")
         tickets = cursor.fetchall()
         return {"tickets": tickets}
     except Exception as e:
@@ -160,7 +161,15 @@ def accept(ticket: AcceptTicket):
         
         user_id = user[0]
 
-        cursor.execute("update bugticket set assigned_to = %s and status = %s where bugtkt_id = %s", (user_id, "IN PROGRESS", ticket.ticket_id))
+        cursor.execute("select created_by from bugticket where bugtkt_id = %s", (ticket.ticket_id,))
+        user2 = cursor.fetchone()
+        
+        if user2 is not None:
+            user_id2 = user2[0]
+            if(user_id == user_id2):
+                raise HTTPException(status_code=403, detail="❌ You cannot accept a ticket you created.")
+        
+        cursor.execute("update bugticket set assigned_to = %s, status = %s where bugtkt_id = %s", (user_id, "IN PROGRESS", ticket.ticket_id))
 
         cursor.execute("INSERT INTO AUDITLOG (bugtkt_id, user_id, action) VALUES (%s, %s, %s)",
                        (ticket.ticket_id, user_id, f"Ticket {ticket.ticket_id} accepted by USER {user_id}"))

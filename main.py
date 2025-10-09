@@ -32,6 +32,9 @@ if "home" not in st.session_state:
 if "comments" not in st.session_state:
     st.session_state.comments = False
 
+if "chat_ticket_id" not in st.session_state:
+    st.session_state.chat_ticket_id = None
+
 def get_base64(file_path):
     with open(file_path, "rb") as f:
         return base64.b64encode(f.read()).decode()
@@ -222,7 +225,7 @@ def accept_ticket(ticket_id, username):
 
         if "message" in data:
             st.success(f"✅ Ticket {ticket_id} is accepted by {username}")
-            st.info("📋 Tip: Once you accept a ticket, it won’t appear here anymore. Refresh to see updated tickets.")
+            st.rerun()
         else:
             st.info(f"ℹ️ {data}")
 
@@ -243,6 +246,7 @@ def close_ticket(ticket_id, username):
 
         if "message" in data:
             st.success(f"✅ Ticket {ticket_id} is closed")
+            st.rerun()
         else:
             st.info(f"ℹ️ {data}")
 
@@ -410,53 +414,52 @@ def write_comments():
                 comments = data.get("comments", [])
 
                 if comments:
-                    for c in comments:
-                        st.markdown(f"""
-                        <style>
-                            .comment-section {{
-                                width: 90%;
-                                margin: 20px auto;
-                                font-family: 'Segoe UI', sans-serif;
-                            }}
-                            table {{
-                                width: 100%;
-                                border-collapse: collapse;
-                                background: #fff;
-                                box-shadow: 0 2px 6px rgba(0,0,0,0.1);
-                                border-radius: 10px;
-                                overflow: hidden;
-                            }}
-                            th {{
-                                background-color: #4DB6AC;
-                                color: white;
-                                text-align: left;
-                                padding: 10px;
-                                font-size: 15px;
-                            }}
-                            td {{
-                                padding: 10px;
-                                border-bottom: 1px solid #eee;
-                                font-size: 14px;
-                            }}
-                            tr:last-child td {{
-                                border-bottom: none;
-                            }}
-                            tr:hover td {{
-                                background-color: #f9f9f9;
-                            }}
-                            .no-comments {{
-                                text-align: center;
-                                color: gray;
-                                padding: 20px;
-                            }}
-                        </style>
+                    st.markdown(f"""
+                    <style>
+                        .comment-section {{
+                            width: 90%;
+                            margin: 20px auto;
+                            font-family: 'Segoe UI', sans-serif;
+                        }}
+                        table {{
+                            width: 100%;
+                            border-collapse: collapse;
+                            background: #fff;
+                            box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+                            border-radius: 10px;
+                            overflow: hidden;
+                        }}
+                        th {{
+                            background-color: #4DB6AC;
+                            color: white;
+                            text-align: left;
+                            padding: 10px;
+                            font-size: 15px;
+                        }}
+                        td {{
+                            padding: 10px;
+                            border-bottom: 1px solid #eee;
+                            font-size: 14px;
+                        }}
+                        tr:last-child td {{
+                            border-bottom: none;
+                        }}
+                        tr:hover td {{
+                            background-color: #f9f9f9;
+                        }}
+                        .no-comments {{
+                            text-align: center;
+                            color: gray;
+                            padding: 20px;
+                        }}
+                    </style>
 
-                        <div class="comment-section">
-                            {"<table><tr><th>User ID</th><th>Comment</th><th>Created At</th></tr>" +
-                            "".join([f"<tr><td>{c['user_id']}</td><td>{c['comment_text']}</td><td>{c['created_at']}</td></tr>" for c in comments])
-                            + "</table>"}
-                        </div>
-                    """, unsafe_allow_html=True)
+                    <div class="comment-section">
+                        {"<table><tr><th>User ID</th><th>Comment</th><th>Created At</th></tr>" +
+                        "".join([f"<tr><td>{c['user_id']}</td><td>{c['comment_text']}</td><td>{c['created_at']}</td></tr>" for c in comments])
+                        + "</table>"}
+                    </div>
+                """, unsafe_allow_html=True)
                 else:
                     st.info("No comments yet for this ticket 💭")
 
@@ -551,7 +554,7 @@ def show_mainpage():
         st.session_state.your_tickets = False
         st.session_state.ticket_page = False 
         st.session_state.home = False
-
+    
     if st.sidebar.button("⭕ Logout", key = "logout"):
         st.session_state.logged_in = False
         st.session_state.login_username = None
