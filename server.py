@@ -237,10 +237,14 @@ def write_comment(comment: Comments):
         
         user_id = user[0]
 
+        cursor.execute("select status from bugticket where bugtkt_id = %s", (comment.bugtkt_id,))
+        status = cursor.fetchone()
+
+        if(status == "CLOSED"):
+            raise HTTPException(status_code=403, detail="You cannot add comments to a closed ticket")
+
         cursor.execute("select created_by, assigned_to from bugticket where bugtkt_id = %s", (comment.bugtkt_id,))
-
         user2 = cursor.fetchone()
-
 
         if(user_id not in (user2[0], user2[1])):
             raise HTTPException(status_code=404, detail=f"This user has neither created or been assigned to hence cannot comment")

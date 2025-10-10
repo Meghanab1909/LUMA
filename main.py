@@ -32,9 +32,6 @@ if "home" not in st.session_state:
 if "comments" not in st.session_state:
     st.session_state.comments = False
 
-if "chat_ticket_id" not in st.session_state:
-    st.session_state.chat_ticket_id = None
-
 def get_base64(file_path):
     with open(file_path, "rb") as f:
         return base64.b64encode(f.read()).decode()
@@ -495,6 +492,7 @@ def write_comments():
                     
                     if "message" in data:
                         st.success(f"✅ {data['message']}")
+                        st.rerun()
                     else:
                         st.info(f"ℹ️ {data}")
                 
