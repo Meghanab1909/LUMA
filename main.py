@@ -32,6 +32,9 @@ if "home" not in st.session_state:
 if "comments" not in st.session_state:
     st.session_state.comments = False
 
+if "search" not in st.session_state:
+    st.session_state.search = False
+
 def get_base64(file_path):
     with open(file_path, "rb") as f:
         return base64.b64encode(f.read()).decode()
@@ -143,6 +146,67 @@ def show_register():
             
             except requests.exceptions.RequestException as e:
                 st.error(f"❌ Connection or request error: {e}")
+
+def search_tickets():
+    try:
+        id_or_title = st.text_input("Enter Ticket ID or Title of the Ticket")
+
+        if id_or_title:  # Only fetch if input provided
+            response = requests.get(f"http://MSB:8000/search-tickets?id_or_title={id_or_title}")
+            response.raise_for_status()
+            data = response.json()
+
+            tickets_data = data.get("tickets", [])
+            comments_data = data.get("comments", [])
+
+            # Handle single ticket (dict) or multiple tickets (list)
+            if isinstance(tickets_data, dict):
+                tickets = [tickets_data]
+            else:
+                tickets = tickets_data
+
+            if not tickets:
+                st.warning("No tickets found matching your input.")
+            else:
+                for t in tickets:
+                    st.markdown(f"""
+                    <div style='background:#f8f9fa;padding:15px;border-radius:10px;margin-bottom:15px;border:1px solid #ddd;'>
+                        <h4>🎫 Ticket ID: {t['bugtkt_id']}</h4>
+                        <p><b>Title:</b> {t['TITLE']}</p>
+                        <p><b>Description:</b> {t['description']}</p>
+                        <p><b>Status:</b> {t['status']}</p>
+                        <p><b>Priority:</b> {t['priority']}</p>
+                        <p><b>Created By:</b> {t['created_by']}</p>
+                        <p><b>Assigned To:</b> {t.get('assigned_to', 'Not assigned')}</p>
+                        <p><b>Specialisation:</b> {t['specialisation']}</p>
+                        <p><b>Created At:</b> {t['created_at']}</p>
+                        <p><b>Updated At:</b> {t['updated_at']}</p>
+                    </div>
+                    """, unsafe_allow_html=True)
+
+                    # --- Display Comments Section ---
+                    st.markdown("### 💬 Comments")
+                    if comments_data:
+                        has_comments = False
+                        for c in comments_data:
+                            if c.get("bug_id") == t["bugtkt_id"]:
+                                has_comments = True
+                                st.markdown(f"""
+                                <div style='background:#ffffff;padding:10px;border-radius:8px;margin-bottom:10px;
+                                            border-left:4px solid #4DB6AC;'>
+                                    <b>User:</b> {c['user_id']}<br>
+                                    <b>Comment:</b> {c['comment_text']}<br>
+                                    <span style='font-size:12px;color:gray;'>🕓 {c['created_at']}</span>
+                                </div>
+                                """, unsafe_allow_html=True)
+                        if not has_comments:
+                            st.info("No comments for this ticket 💭")
+                    else:
+                        st.info("No comments for this ticket 💭")
+
+                    st.markdown("---")
+    except Exception as e:
+        st.error(f"❌ Unable to Display Ticket: {e}")
 
 def raise_ticket():
     st.markdown("""
@@ -366,7 +430,7 @@ def show_tickets():
             st.markdown(
             """
             <div style="text-align: center; padding: 40px; font-family: 'Arial', sans-serif;">
-                <h1 style="color:#4DB6AC; font-size:48px; margin-bottom:10px;">💡 LUMA</h1>
+                <h1 style=font-size:48px; margin-bottom:10px;">👋 Welcome to LUMA</h1>
                 <h3 style="color:#555555; font-weight:400; margin-bottom:30px;">
                     Your lightweight bug & task tracking system
                 </h3>
@@ -527,31 +591,43 @@ def show_mainpage():
 
     set_background('main.png')
     username = st.session_state["login_username"]
-    st.sidebar.markdown(f"<h1 style = 'margin-left: 40px'>👤 User: {username}</h1><br>", unsafe_allow_html = True)
+    st.sidebar.markdown("<h1 style = 'margin-left: 40px; margin-top: -50px; font-size: 50px; color: #5F9EA0'>💡 LUMA<br>", unsafe_allow_html = True)
+    st.sidebar.markdown(f"<h1 style = 'margin-left: 60px'>👤 User: {username}</h1><br>", unsafe_allow_html = True)
 
     if st.sidebar.button("🏠 Home", key = "home-page"):
         st.session_state.home = True
         st.session_state.ticket_page = False
         st.session_state.your_tickets = False 
         st.session_state.comments = False
+        st.session_state.search = False
 
     if st.sidebar.button("📝 Raise a Ticket", key = "raise-ticket"):
         st.session_state.ticket_page = True
         st.session_state.your_tickets = False 
         st.session_state.home = False
         st.session_state.comments = False
+        st.session_state.search = False
+    
+    if st.sidebar.button("🔍 Search Tickets", key = "search-for-tickets"):
+        st.session_state.search = True
+        st.session_state.comments = False 
+        st.session_state.your_tickets = False
+        st.session_state.ticket_page = False 
+        st.session_state.home = False
 
     if st.sidebar.button("📩 Your Tickets", key = "show-ticket"):
         st.session_state.your_tickets = True
         st.session_state.ticket_page = False 
         st.session_state.home = False
         st.session_state.comments = False
+        st.session_state.search = False
 
     if st.sidebar.button("✒️ Comments", key = "write-comments"):
         st.session_state.comments = True 
         st.session_state.your_tickets = False
         st.session_state.ticket_page = False 
         st.session_state.home = False
+        st.session_state.search = False
     
     if st.sidebar.button("⭕ Logout", key = "logout"):
         st.session_state.logged_in = False
@@ -566,6 +642,8 @@ def show_mainpage():
         show_tickets()
     elif st.session_state.comments:
         write_comments()
+    elif st.session_state.search:
+        search_tickets()
     else:
         show_tickets()
 

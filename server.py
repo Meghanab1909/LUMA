@@ -5,6 +5,7 @@ import mysql.connector
 import logging
 from typing import Optional
 from datetime import datetime
+from mysql.connector import pooling
 
 app = FastAPI()
 
@@ -15,14 +16,23 @@ class User(BaseModel):
     password: str
     roles: list[str] = []
 
+dbconfig = {
+    "host": "localhost",
+    "user": "root",
+    "password": "412356",
+    "database": "minijira"
+}
+
+connection_pool = pooling.MySQLConnectionPool(
+    pool_name="luma_pool",
+    pool_size=10,
+    pool_reset_session=True,
+    **dbconfig
+)
+
 # Database connection
 def get_db():
-    return mysql.connector.connect(
-        host="localhost",      # change if your DB is remote
-        user="root",           # your MySQL username
-        password="412356",   # your MySQL password
-        database="minijira"  # your DB name
-    )
+    return connection_pool.get_connection()
 
 @app.post("/register")
 def register_user(user: User):
@@ -311,6 +321,36 @@ def close_tickets(ticket: CloseTicket):
         cursor.execute("SET FOREIGN_KEY_CHECKS = 1")
 
         return {"message": "Ticket closed successfully"}
+    except Exception as e:
+        raise HTTPException(status = 500, detail = str(e))
+    finally:
+        cursor.close()
+        conn.close()
+
+@app.get("/search-tickets")
+def search_tickets(id_or_title):
+    conn = get_db()
+    cursor = conn.cursor(dictionary = True)
+
+    try:
+        if(id_or_title.isdigit()):
+            cursor.execute("select *from bugticket where bugtkt_id = %s", (id_or_title,))
+            tickets = cursor.fetchone()
+
+            cursor.execute("select *from comment where bug_id = %s", (id_or_title,))
+            comments = cursor.fetchall()
+        else:
+            cursor.execute("SELECT * FROM bugticket WHERE TITLE LIKE %s", (f"%{id_or_title}%",))
+            tickets = cursor.fetchall()
+
+            if tickets:
+                ticket_ids = [t["bugtkt_id"] for t in tickets]
+                format_strings = ','.join(['%s'] * len(ticket_ids))
+                cursor.execute(f"SELECT * FROM comment WHERE bug_id IN ({format_strings})", tuple(ticket_ids))
+                comments = cursor.fetchall()
+            else:
+                comments = []
+        return {"tickets": tickets, "comments": comments}
     except Exception as e:
         raise HTTPException(status = 500, detail = str(e))
     finally:
