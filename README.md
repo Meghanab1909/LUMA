@@ -12,9 +12,8 @@ LUMA is a user-friendly web-based application designed to streamline bug trackin
         <li>Home</li>
         <li>Your Tickets</li>
         <li>Search Tickets</li>
-        <li>Show Comments</li>
         <li>Raise Ticket</li>
-        <li>Comment</li>
+        <li>Comments</li>
         <li>Logout</li>
       </ol>
     </td>
