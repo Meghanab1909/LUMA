@@ -356,3 +356,36 @@ def search_tickets(id_or_title):
     finally:
         cursor.close()
         conn.close()
+
+class ForgotPassword(BaseModel):
+    username: str
+    password: str 
+
+@app.post("/forgot_password")
+def forgot_password(password: ForgotPassword):
+    conn = get_db()
+    cursor = conn.cursor()
+
+    try:
+        cursor.execute("SET FOREIGN_KEY_CHECKS = 0")
+
+        cursor.execute("select user_id from user where username = %s", (password.username,))
+        user = cursor.fetchone()
+
+        if user is None:
+            raise HTTPException(status_code=404, detail=f"User '{password.username}' not found in the database.")
+        
+        user_id = user[0]
+
+        cursor.execute("UPDATE user set password_hash = %s where user_id = %s", (password.password, user_id))
+
+        conn.commit()
+
+        cursor.execute("SET FOREIGN_KEY_CHECKS = 1")
+
+        return {"message": "Password reset successfully! Proceed to Login"}
+    except Exception as e:
+        raise HTTPException(status_code = 500, detail = str(e))
+    finally:
+        cursor.close()
+        conn.close()

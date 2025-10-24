@@ -6,7 +6,7 @@ from datetime import datetime
 import pandas as pd
 
 if "show_login" not in st.session_state:
-    st.session_state.show_login = False
+    st.session_state.show_login = True
 
 if "show_register" not in st.session_state:
     st.session_state.show_register = False
@@ -35,6 +35,9 @@ if "comments" not in st.session_state:
 if "search" not in st.session_state:
     st.session_state.search = False
 
+if "forgot_password" not in st.session_state:
+    st.session_state.forgot_password = False
+
 def get_base64(file_path):
     with open(file_path, "rb") as f:
         return base64.b64encode(f.read()).decode()
@@ -57,22 +60,12 @@ def set_background(image_path):
     """
     st.markdown(css, unsafe_allow_html=True)
 
-# Call this with your image file
-set_background("bg.png")
 
 def show_login():
-    image_base64 = get_base64("logo-removebg-preview.png")
-
-    st.markdown(f"""
-        <div style="text-align: center">
-            <img src="data:image/png;base64,{image_base64}" style="width:100px; border-radius:5%; margin-top: -60px; position: relative;">
-        </div>
-    """, unsafe_allow_html=True)
-
     login_username = st.text_input("Username or Email")
     login_password = st.text_input("Password", type="password")
     
-    if st.button("Sign In", key = "signin"):
+    if st.button("🔑Sign In", key = "signin"):
         if not login_username or not login_password:
             st.warning("Please fill all the fields")
         else:
@@ -102,20 +95,12 @@ def show_login():
                 st.error(f"❌ Connection or request error: {e}")
 
 def show_register():
-    image_base64 = get_base64("logo-removebg-preview.png")
-
-    st.markdown(f"""
-        <div style="text-align: center">
-            <img src="data:image/png;base64,{image_base64}" style="width:100px; border-radius:5%; margin-top: -60px; position: relative;">
-        </div>
-    """, unsafe_allow_html=True)
-
     username = st.text_input("Username")
     email = st.text_input("Email", key="email")
     password = st.text_input("Password", type="password")
     roles = st.multiselect("Role(s)", ["Developer", "Tester"])
 
-    if st.button("Sign Up", key = "signup"):
+    if st.button("📝Sign Up", key = "signup"):
         if not username or not password or not roles:
             st.warning("Please fill all the required fields and select at least one role")
 
@@ -148,8 +133,15 @@ def show_register():
                 st.error(f"❌ Connection or request error: {e}")
 
 def search_tickets():
+    st.markdown("""
+        <style>
+        label[data-testid="stWidgetLabel"] > div {
+            font-size: 20px
+        }
+        </style>
+        """, unsafe_allow_html=True)
     try:
-        id_or_title = st.text_input("Enter Ticket ID or Title of the Ticket")
+        id_or_title = st.text_input("Enter Ticket ID or Title and Press Enter")
 
         if id_or_title:  # Only fetch if input provided
             response = requests.get(f"http://MSB:8000/search-tickets?id_or_title={id_or_title}")
@@ -170,7 +162,7 @@ def search_tickets():
             else:
                 for t in tickets:
                     st.markdown(f"""
-                    <div style='background:#f8f9fa;padding:15px;border-radius:10px;margin-bottom:15px;border:1px solid #ddd;'>
+                    <div style='background:#f7b9b9;padding:15px;border-radius:10px;margin-bottom:15px;border:1px solid #ddd;'>
                         <h4>🎫 Ticket ID: {t['bugtkt_id']}</h4>
                         <p><b>Title:</b> {t['TITLE']}</p>
                         <p><b>Description:</b> {t['description']}</p>
@@ -216,8 +208,23 @@ def raise_ticket():
         position: absolute;
     }
     </style>
-    <h2>BUG TICKET TEMPLATE</h2>
+    <h2 style = 'text-align: center'>BUG TICKET TEMPLATE</h2>
     """, unsafe_allow_html = True)
+
+    st.markdown("""
+    <style>
+    /* Make the form background orange */
+    div[data-testid="stForm"] {
+        background-color: #cfb0cf;
+        padding: 30px;
+        border-radius: 15px;
+    }
+                
+    label[data-testid="stWidgetLabel"] > div {
+        font-size: 16px;
+    }
+    </style>
+    """, unsafe_allow_html=True)
 
     st.markdown("<div class = 'main'>", unsafe_allow_html = True)
     with st.form("ticket_form", clear_on_submit = True):
@@ -232,7 +239,7 @@ def raise_ticket():
                                                         "Project Manager", "Business Analyst", "Technical Writer"
                                                         ]) or []
         
-        submit = st.form_submit_button("Submit")
+        submit = st.form_submit_button("✅ Submit")
 
         current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
@@ -332,7 +339,7 @@ def show_user_tickets():
                     st.markdown(
                         f"""
                         <div style="padding:15px; margin-bottom:15px; border-radius:10px; 
-                        background-color:#f9f9f9; box-shadow:0px 2px 5px rgba(0,0,0,0.1)">
+                        background-color: #e4d9ec; box-shadow:0px 2px 5px rgba(0,0,0,0.1)">
                             <h4>🎫 {ticket['TITLE']}</h4>
                             <h5>Ticket ID: {ticket['bugtkt_id']}</h5>
                             <p><b>Status:</b> {ticket['status']} | <b>Priority:</b> {ticket['priority']}</p>
@@ -456,12 +463,12 @@ def write_comments():
         position: absolute;
     }
     </style>
-    <h2>ENTER A BUG TICKET ID TO VIEW COMMENTS</h2>
+    <h2 style = 'text-align: center'>ENTER A BUG TICKET ID TO VIEW COMMENTS</h2>
     """, unsafe_allow_html=True)
 
     with st.form("view_comment_form", clear_on_submit = False):
         bugtkt_id = st.text_input("Bug Ticket ID")
-        view = st.form_submit_button("View")
+        view = st.form_submit_button("🔭 View")
 
         if view:
             if not bugtkt_id:
@@ -527,8 +534,24 @@ def write_comments():
                 st.markdown("</div>", unsafe_allow_html=True)
                     
     st.markdown("""
-    <h2>WRITE YOUR COMMENT FOR A TICKET</h2>
+    <br>
+    <h2 style = 'text-align: center'>WRITE YOUR COMMENT FOR A TICKET</h2>
     """, unsafe_allow_html = True)
+
+    st.markdown("""
+    <style>
+    /* Make the form background orange */
+    div[data-testid="stForm"] {
+        background-color: #ffe4e1;
+        padding: 30px;
+        border-radius: 15px;
+    }
+                
+    label[data-testid="stWidgetLabel"] > div {
+        font-size: 16px;
+    }
+    </style>
+    """, unsafe_allow_html=True)
 
     st.markdown("<div class = 'main'>", unsafe_allow_html = True)
     with st.form("comment_form", clear_on_submit = True):
@@ -536,7 +559,7 @@ def write_comments():
         username = st.session_state["login_username"]
         comment_text = st.text_area("Enter comment")
 
-        submit = st.form_submit_button("Submit")
+        submit = st.form_submit_button("✅ Submit")
 
         if submit:
             if not bugtkt_id or not comment_text:
@@ -567,7 +590,43 @@ def write_comments():
     
     st.markdown('</div>', unsafe_allow_html=True)
 
+def forgot_password():
+    username = st.text_input("Username", key = "username-forgotpassword")
+    password = st.text_input("New Password", key = "password-forgotpassword", type = "password")
+    confirm_pwd = st.text_input("Confirm new password", key = "confirm-forgotpassword", type = "password")
+
+    if st.button("➡️"):
+        if(password != confirm_pwd):
+            st.warning("Passwords do not match. Please try again.")
+        else:
+            try:
+                payload = {
+                    "username":username,
+                    "password":password
+                }
+
+                response = requests.post("http://MSB:8000/forgot_password", json=payload)
+                response.raise_for_status()
+
+                data = response.json()
+                
+                if "message" in data:
+                    st.toast(f"✅ {data['message']}")
+                    st.session_state.show_register = False
+                    st.session_state.show_login = True
+                    st.session_state.forgot_password = False
+                    st.rerun()
+                else:
+                    st.info(f"ℹ️ {data}")
+            
+            except requests.exceptions.HTTPError as e:
+                st.error(f"HTTP Error: {e.response.status_code} - {e.response.text}")
+            except Exception as e:
+                st.error(f"Request failed: {e}")
+
 def show_mainpage():
+    set_background('main.png')
+
     st.markdown(
         """
         <style>
@@ -589,11 +648,9 @@ def show_mainpage():
         unsafe_allow_html=True
     )
 
-    set_background('main.png')
     username = st.session_state["login_username"]
-    st.sidebar.markdown("<h1 style = 'margin-left: 40px; margin-top: -50px; font-size: 50px; color: #5F9EA0'>💡 LUMA<br>", unsafe_allow_html = True)
-    st.sidebar.markdown(f"<h1 style = 'margin-left: 60px'>👤 User: {username}</h1><br>", unsafe_allow_html = True)
-
+    st.sidebar.markdown("<h1 style = 'margin-left: 55px; margin-top: -50px; font-size: 50px; color: #5F9EA0'>💡 LUMA<br>", unsafe_allow_html = True)
+    st.sidebar.markdown(f"<h1 style = 'margin-left: 75px'>👤 User: {username}</h1><br>", unsafe_allow_html = True)
     if st.sidebar.button("🏠 Home", key = "home-page"):
         st.session_state.home = True
         st.session_state.ticket_page = False
@@ -647,28 +704,10 @@ def show_mainpage():
     else:
         show_tickets()
 
-col1, col2 = st.columns([1, 1])  # ratio 1:1 → each half
+col1, col2 = st.columns([1, 1])  
 
-if not st.session_state.logged_in:
-    # Treat the first column as your "sidebar"
-    with col1:
-        st.markdown("""
-            <h1 style = 'margin-top: 105px; color: white; align-text: center'>💡 LUMA</h1>
-            """, unsafe_allow_html=True)
-
-        login = st.button("LOGIN", key="login")
-        register = st.button("REGISTER", key="register")
-
-        if login:
-            st.session_state.show_login = True
-            st.session_state.show_register = False
-
-        if register:
-            st.session_state.show_register = True
-            st.session_state.show_login = False
-            
-        
-    # Main content in the second column
+if not st.session_state.logged_in: 
+    set_background("login.png")
     with col2:
         st.markdown(
             """
@@ -676,25 +715,52 @@ if not st.session_state.logged_in:
             div.stButton > button {
                 display: block;
                 margin-left: 65px;   
-                width: 200px;        
+                width: 100px;        
                 height: 50px;
                 border-radius: 10px;
-                font-size: 18px;
+                font-size: 17px;
                 background-color: #ffffff;
                 cursor: pointer;
                 transition: 0.3s;
+                margin-left: 125px;
             }
 
             label[data-testid="stWidgetLabel"] > div {
-            font-size: 17px 
+                font-size: 17px;
             }
             </style>
             """,
             unsafe_allow_html=True
         )
-        if st.session_state.get("show_register", True):
-            show_register()
-        else:
+
+        if st.session_state.show_login:
             show_login()
+
+            st.markdown("<p style = 'margin-left: 115px'>Forgot password?</p>", unsafe_allow_html=True)
+            if st.button("🛡️Reset"):
+                st.session_state.show_register = False
+                st.session_state.show_login = False
+                st.session_state.forgot_password = True
+                st.rerun()
+
+            st.markdown("<p style = 'margin-left: 100px'>Don't have an account?</p>", unsafe_allow_html=True)
+            if st.button("📝Sign up"):
+                st.session_state.show_register = True
+                st.session_state.show_login = False
+                st.session_state.forgot_password = False
+                st.rerun()
+        else:
+            show_register()
+            st.markdown("<p style = 'margin-left: 100px'>Already have an account?</p>", unsafe_allow_html=True)
+            if st.button("🔑Sign in"):
+                st.session_state.show_register = False
+                st.session_state.show_login = True
+                st.session_state.forgot_password = False
+                st.rerun()
+        
+        if st.session_state.forgot_password:
+            st.toast("Scroll Down to Reset Password ⬇️")
+            st.subheader("🔐Reset Password")
+            forgot_password()
 else:
     show_mainpage()
