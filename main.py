@@ -639,6 +639,7 @@ def show_mainpage():
             border: none;
             cursor: pointer;
             background-color: #E6E6FA;
+            margin-left: 20px;
         }
         div[data-testid="stButton"] button:hover {
             background-color: lightgray;
