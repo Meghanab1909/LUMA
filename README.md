@@ -41,8 +41,7 @@ LUMA is a user-friendly web-based application designed to streamline bug trackin
 ## Run the project<br>
 (Please run the project in the following sequence)
 1. run_server.bat
-2. run_client.bat
-<br>
+2. run_client.bat<br>
 *Note: The output screenshots help understand the project flow*
 
 ## Project Contributors _(In Alphabetical Order)_
