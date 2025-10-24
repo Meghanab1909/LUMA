@@ -21,7 +21,7 @@ LUMA is a user-friendly web-based application designed to streamline bug trackin
     <tr>
       <th>server.py</th>
       <td>
-      server.py implements the backend of LUMA using FastAPI. It handles all server-side operations, including:
+      The server-side of LUMA is implemented in server.py using FastAPI. It handles all server-side operations, including:
       <ol>
         <li>User authentication: Login, registration, and password reset.</li>
         <li>Ticket management: Create, update, accept, close, and fetch tickets.</li>
@@ -42,6 +42,34 @@ LUMA is a user-friendly web-based application designed to streamline bug trackin
 1. run_server.bat
 2. run_client.bat<br>
 *Note: The output screenshots help understand the project flow*
+
+## Output Screenshots
+<table>
+  <tr>
+    <th>Login-Register</th>
+    <td><img src = "Output Screenshots/login-page.png" /></td>
+  </tr>
+  <tr>
+    <th>Home Page</th>
+    <td><img src = "Output Screenshots/home-page.png" /></td>
+  </tr>
+  <tr>
+    <th>Raise Ticket</th>
+    <td><img src = "Output Screenshots/raise-ticket.png" /></td>
+  </tr>
+  <tr>
+    <th>Search Ticket</th>
+    <td><img src = "Output Screenshots/search-ticket.png" /></td>
+  </tr>
+  <tr>
+    <th>Your Tickets</th>
+    <td><img src = "Output Screenshots/your-tickets.png" /></td>
+  </tr>
+  <tr>
+    <th>Comments</th>
+    <td><img src = "Output Screenshots/comments.png" /></td>
+  </tr>
+</table>
 
 ## Project Contributors _(In Alphabetical Order)_
 1. Meghana Saisri Bisa - github username: Meghanab1909
