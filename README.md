@@ -42,7 +42,8 @@ LUMA is a user-friendly web-based application designed to streamline bug trackin
 (Please run the project in the following sequence)
 1. run_server.bat
 2. run_client.bat
-*Note: To get a better understanding of the project, kindly watch the screen recording of the project (project.mp4) uploaded in the repository. If the video is not being displayed/loaded on github please download it*
+<br>
+*Note: The output screenshots help understand the project flow*
 
 ## Project Contributors _(In Alphabetical Order)_
 1. Meghana Saisri Bisa - github username: Meghanab1909
