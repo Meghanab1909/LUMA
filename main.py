@@ -229,7 +229,7 @@ def raise_ticket():
     st.markdown("<div class = 'main'>", unsafe_allow_html = True)
     with st.form("ticket_form", clear_on_submit = True):
         title = st.text_input("Title")
-        description = st.text_area("Enter project description (if you have a github link please include that as well)")
+        description = st.text_area("Enter bug description (if you have a github link please include that as well)")
         priority = st.selectbox("Priority", ["HIGH", "MEDIUM", "LOW", "CRITICAL"])
         specialization = st.multiselect("Specialization", ["Frontend Developer", "Backend Developer", "Full-Stack Developer",
                                                         "Mobile App Developer", "Game Developer", "DevOps Engineer",

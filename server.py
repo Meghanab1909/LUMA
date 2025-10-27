@@ -107,7 +107,8 @@ def raise_ticket(ticket: Ticket):
     try:
         specialization_str = ",".join(ticket.specialization)
 
-        cursor.execute("SELECT user_id FROM user where username=%s", (ticket.created_by,))
+        #cursor.execute("SELECT user_id FROM user where username=%s", (ticket.created_by,))
+        cursor.execute("SELECT get_user_id(%s)", (ticket.username,))
         user = cursor.fetchone()
 
         if user is None:
@@ -122,9 +123,9 @@ def raise_ticket(ticket: Ticket):
                     (ticket.title, ticket.description, ticket.status, ticket.priority, user_id, None, ticket.created_at, None, specialization_str))
         
         
-        bugticket_id = cursor.lastrowid
+        #bugticket_id = cursor.lastrowid
 
-        cursor.execute("INSERT INTO AUDITLOG (bugtkt_id, user_id, action) VALUES (%s, %s, %s)", (bugticket_id, user_id, f"Ticket raised by USER {user_id}"))
+        #cursor.execute("INSERT INTO AUDITLOG (bugtkt_id, user_id, action) VALUES (%s, %s, %s)", (bugticket_id, user_id, f"Ticket raised by USER {user_id}"))
         
         conn.commit()
         cursor.execute("SET FOREIGN_KEY_CHECKS=1")
@@ -146,7 +147,7 @@ def show_tickets():
         tickets = cursor.fetchall()
         return {"tickets": tickets}
     except Exception as e:
-        raise HTTPException(status = 500, detail = str(e))
+        raise HTTPException(status_code = 500, detail = str(e))
     finally:
         cursor.close()
         conn.close()
@@ -163,34 +164,36 @@ def accept(ticket: AcceptTicket):
     try:
         cursor.execute("SET FOREIGN_KEY_CHECKS = 0")
         
-        cursor.execute("select user_id from user where username = %s", (ticket.username,))
+        #cursor.execute("select user_id from user where username = %s", (ticket.username,))
+        cursor.execute("SELECT get_user_id(%s)", (ticket.username,))
         user = cursor.fetchone()
 
         if user is None:
-            raise HTTPException(status_code=404, detail=f"User '{ticket.created_by}' not found in the database.")
+            raise HTTPException(status_code=404, detail=f"User '{ticket.username}' not found in the database.")
         
         user_id = user[0]
 
         cursor.execute("select created_by from bugticket where bugtkt_id = %s", (ticket.ticket_id,))
         user2 = cursor.fetchone()
         
-        if user2 is not None:
-            user_id2 = user2[0]
-            if(user_id == user_id2):
-                raise HTTPException(status_code=403, detail="❌ You cannot accept a ticket you created.")
+        if user2 and user_id == user2[0]:
+            raise HTTPException(status_code=403, detail="❌ You cannot accept a ticket you created.")
         
-        cursor.execute("update bugticket set assigned_to = %s, status = %s where bugtkt_id = %s", (user_id, "IN PROGRESS", ticket.ticket_id))
+        #cursor.execute("update bugticket set assigned_to = %s, status = %s where bugtkt_id = %s", (user_id, "IN PROGRESS", ticket.ticket_id))
+        #cursor.execute("INSERT INTO AUDITLOG (bugtkt_id, user_id, action) VALUES (%s, %s, %s)",
+        #               (ticket.ticket_id, user_id, f"Ticket {ticket.ticket_id} accepted by USER {user_id}"))
+        
+        cursor.callproc("sp_accept_ticket", (ticket.ticket_id, user_id))
 
-        cursor.execute("INSERT INTO AUDITLOG (bugtkt_id, user_id, action) VALUES (%s, %s, %s)",
-                       (ticket.ticket_id, user_id, f"Ticket {ticket.ticket_id} accepted by USER {user_id}"))
-        
         conn.commit()
 
         cursor.execute("SET FOREIGN_KEY_CHECKS = 1")
 
         return {"message": "Ticket accepted successfully"}
+    except HTTPException:
+        raise
     except Exception as e:
-        raise HTTPException(status = 500, detail = str(e))
+        raise HTTPException(status_code = 500, detail = str(e))
     finally:
         cursor.close()
         conn.close()
@@ -221,7 +224,7 @@ def display_usertickets(username: str):
 
         return {"created_tickets": created_tickets, "assigned_tickets": assigned_tickets}
     except Exception as e:
-        raise HTTPException(status = 500, detail = str(e))
+        raise HTTPException(status_code = 500, detail = str(e))
     finally:
         cursor.close()
         conn.close()
@@ -239,7 +242,8 @@ def write_comment(comment: Comments):
     try:
         cursor.execute("SET FOREIGN_KEY_CHECKS = 0")
 
-        cursor.execute("select user_id from user where username = %s", (comment.username,))
+        #cursor.execute("select user_id from user where username = %s", (comment.username,))
+        cursor.execute("SELECT get_user_id(%s)", (comment.username,))
         user = cursor.fetchone()
 
         if user is None:
@@ -262,8 +266,8 @@ def write_comment(comment: Comments):
         cursor.execute("INSERT INTO COMMENT (bug_id, user_id, comment_text) VALUES (%s, %s, %s)",
                        (comment.bugtkt_id, user_id, comment.comment_text))
 
-        cursor.execute("INSERT INTO AUDITLOG (bugtkt_id, user_id, action) VALUES (%s, %s, %s)",
-                       (comment.bugtkt_id, user_id, f"A comment was added for TICKET {comment.bugtkt_id} by USER {user_id}"))
+        #cursor.execute("INSERT INTO AUDITLOG (bugtkt_id, user_id, action) VALUES (%s, %s, %s)",
+        #               (comment.bugtkt_id, user_id, f"A comment was added for TICKET {comment.bugtkt_id} by USER {user_id}"))
 
         conn.commit()
 
@@ -286,7 +290,7 @@ def show_comments(bugtkt_id: int):
         comments = cursor.fetchall()
         return {"comments": comments}
     except Exception as e:
-        raise HTTPException(status = 500, detail = str(e))
+        raise HTTPException(status_code = 500, detail = str(e))
     finally:
         cursor.close()
         conn.close()
@@ -303,7 +307,8 @@ def close_tickets(ticket: CloseTicket):
     try:
         cursor.execute("SET FOREIGN_KEY_CHECKS = 0")
 
-        cursor.execute("select user_id from user where username = %s", (ticket.username,))
+        #cursor.execute("select user_id from user where username = %s", (ticket.username,))
+        cursor.execute("SELECT get_user_id(%s)", (ticket.username,))
         user = cursor.fetchone()
 
         if user is None:
@@ -311,10 +316,11 @@ def close_tickets(ticket: CloseTicket):
         
         user_id = user[0]
 
-        cursor.execute("UPDATE bugticket set STATUS = %s where bugtkt_id = %s", ("CLOSED", ticket.ticket_id))
+        #cursor.execute("UPDATE bugticket set STATUS = %s where bugtkt_id = %s", ("CLOSED", ticket.ticket_id))
+        #cursor.execute("INSERT INTO AUDITLOG (bugtkt_id, user_id, action) VALUES (%s, %s, %s)",
+        #               (ticket.ticket_id, user_id, f"Ticket {ticket.ticket_id} closed by USER {user_id}"))
 
-        cursor.execute("INSERT INTO AUDITLOG (bugtkt_id, user_id, action) VALUES (%s, %s, %s)",
-                       (ticket.ticket_id, user_id, f"Ticket {ticket.ticket_id} closed by USER {user_id}"))
+        cursor.callproc("sp_close_ticket", (ticket.ticket_id, user_id))
 
         conn.commit()
 
@@ -322,7 +328,7 @@ def close_tickets(ticket: CloseTicket):
 
         return {"message": "Ticket closed successfully"}
     except Exception as e:
-        raise HTTPException(status = 500, detail = str(e))
+        raise HTTPException(status_code = 500, detail = str(e))
     finally:
         cursor.close()
         conn.close()
@@ -352,7 +358,7 @@ def search_tickets(id_or_title):
                 comments = []
         return {"tickets": tickets, "comments": comments}
     except Exception as e:
-        raise HTTPException(status = 500, detail = str(e))
+        raise HTTPException(status_code = 500, detail = str(e))
     finally:
         cursor.close()
         conn.close()
@@ -369,7 +375,8 @@ def forgot_password(password: ForgotPassword):
     try:
         cursor.execute("SET FOREIGN_KEY_CHECKS = 0")
 
-        cursor.execute("select user_id from user where username = %s", (password.username,))
+        #cursor.execute("select user_id from user where username = %s", (password.username,))
+        cursor.execute("SELECT get_user_id(%s)", (password.username,))
         user = cursor.fetchone()
 
         if user is None:
